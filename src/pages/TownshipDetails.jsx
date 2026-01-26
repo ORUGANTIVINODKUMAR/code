@@ -81,7 +81,7 @@ const TownshipDetails = () => {
           onChange={handleChange}
           style={styles.input}
         />
-
+    
         <input
           name="ownerName"
           placeholder="Administrator Name *"

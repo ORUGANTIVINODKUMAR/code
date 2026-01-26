@@ -37,7 +37,7 @@ router.post("/", async (req, res) => {
 
     res.status(201).json(township);
   } catch (err) {
-    console.error("Create township error:", err.message);
+    console.error("Create township error:", err);
     res.status(500).json({ message: "Failed to create township" });
   }
 });
@@ -56,7 +56,6 @@ router.get("/", async (req, res) => {
     const townships = await Township.find({ userId });
     res.json(townships);
   } catch (err) {
-    console.error("Fetch townships error:", err.message);
     res.status(500).json({ message: "Failed to fetch townships" });
   }
 });
@@ -80,8 +79,25 @@ router.get("/:id", async (req, res) => {
 
     res.json(township);
   } catch (err) {
-    console.error("Get township error:", err.message);
+    console.error("Get township error:", err);
     res.status(500).json({ message: "Failed to load township" });
+  }
+});
+// ===============================
+// GET TOWNSHIP BY ID (FOR REPORTS)
+// ===============================
+router.get("/:id", async (req, res) => {
+  try {
+    const township = await Township.findById(req.params.id);
+
+    if (!township) {
+      return res.status(404).json({ message: "Township not found" });
+    }
+
+    res.json(township);
+  } catch (err) {
+    console.error("❌ Get township by ID error:", err.message);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

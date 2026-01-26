@@ -5,12 +5,28 @@ const Budget = require("../models/Budget");
 /* ================= CREATE BUDGET ================= */
 router.post("/", async (req, res) => {
   try {
+    const {
+      userId,
+      townshipId,
+      name,
+      fiscalYear,
+      funds,
+      budgetType // 👈 NEW
+    } = req.body;
+
+    if (!budgetType) {
+      return res.status(400).json({
+        message: "budgetType is required"
+      });
+    }
+
     const budget = await Budget.create({
-      userId: req.body.userId,
-      townshipId: req.body.townshipId,
-      name: req.body.name,
-      fiscalYear: req.body.fiscalYear,
-      funds: req.body.funds,
+      userId,
+      townshipId,
+      name,
+      fiscalYear,
+      funds,
+      budgetType, // 👈 SAVED HERE
       entries: {},
       history: [],
       status: "draft"
@@ -22,6 +38,8 @@ router.post("/", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+
 
 /* ================= LIST BUDGETS ================= */
 router.get("/", async (req, res) => {

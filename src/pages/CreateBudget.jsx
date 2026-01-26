@@ -1,19 +1,32 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-/* ================= MASTER FUND LIST ================= */
-const ALL_FUNDS = {
-  generalTown: false,
-  generalAssistance: false,
-  cemetery: false,
-  insurance: false,
-  socialSecurity: false,
-  retirement: false,
-  roadBridge: false,
-  permanentRoad: false,
-  equipmentBuilding: false,
-  motorFuelTax: false
+/* ================= FUND GROUPS ================= */
+
+const FUND_GROUPS = {
+  GENERAL_TOWN: {
+    label: "General Town",
+    funds: [
+      "generalTown",
+      "generalAssistance",
+      "cemetery",
+      "insurance",
+      "socialSecurity",
+      "retirement"
+    ]
+  },
+  ROAD_BRIDGE: {
+    label: "Road & Bridge",
+    funds: [
+      "roadBridge",
+      "permanentRoad",
+      "equipmentBuilding",
+      "motorFuelTax"
+    ]
+  }
 };
+
+/* ================= COMPONENT ================= */
 
 const CreateBudget = () => {
   const navigate = useNavigate();
@@ -22,57 +35,104 @@ const CreateBudget = () => {
   const townshipId = localStorage.getItem("activeTownshipId");
 
   const [budgetName, setBudgetName] = useState("");
-  const [fiscalYear, setFiscalYear] = useState("");
-  const [funds, setFunds] = useState({ ...ALL_FUNDS });
+
+  /* ===== Fiscal Year ===== */
+  const [fyType, setFyType] = useState("CURRENT");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+
+  /* ===== Budget Type ===== */
+  const [budgetType, setBudgetType] = useState(null); // GENERAL_TOWN | ROAD_BRIDGE
+
+  /* ===== Funds ===== */
+  const [funds, setFunds] = useState({
+    generalTown: false,
+    generalAssistance: false,
+    cemetery: false,
+    insurance: false,
+    socialSecurity: false,
+    retirement: false,
+    roadBridge: false,
+    permanentRoad: false,
+    equipmentBuilding: false,
+    motorFuelTax: false
+  });
+
   const [loading, setLoading] = useState(false);
 
-  /* ================= INIT (RUN ONCE) ================= */
-  useEffect(() => {
-    const setupData = JSON.parse(localStorage.getItem("initialSetup"));
+  /* ================= HELPERS ================= */
 
-    if (!setupData) {
-      navigate("/initial-setup", { replace: true });
-      return;
+  const generateFiscalYearLabel = () => {
+    const today = new Date();
+
+    if (fyType === "CURRENT") {
+      return today.getFullYear().toString();
     }
 
-    let fy = "";
-    if (setupData.fiscalYearType === "township") {
-      fy = "Township FY (April 1 – March 31)";
-    } else if (setupData.fiscalYearType === "calendar") {
-      fy = "Calendar Year (Jan 1 – Dec 31)";
-    } else {
-      fy = `Custom FY (${setupData.customDates.start} – ${setupData.customDates.end})`;
+    if (fyType === "TOWNSHIP") {
+      const startYear =
+        today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1;
+      return `Township FY (April 1 – March 31) ${startYear}-${startYear + 1}`;
     }
 
-    setFiscalYear(fy);
-
-    if (setupData.selectedFunds) {
-      const base = { ...ALL_FUNDS };
-      Object.keys(setupData.selectedFunds).forEach(fund => {
-        base[fund] = true;
-      });
-      setFunds(base);
+    if (fyType === "CUSTOM" && customStart && customEnd) {
+      return `Custom FY (${customStart} – ${customEnd})`;
     }
-  }, [navigate]); // ✅ ONLY navigate
 
-  /* ================= TOGGLE FUND ================= */
+    return "";
+  };
+
+  const selectBudgetType = (type) => {
+    setBudgetType(type);
+
+    const reset = {
+      generalTown: false,
+      generalAssistance: false,
+      cemetery: false,
+      insurance: false,
+      socialSecurity: false,
+      retirement: false,
+      roadBridge: false,
+      permanentRoad: false,
+      equipmentBuilding: false,
+      motorFuelTax: false
+    };
+
+    if (type === "GENERAL_TOWN") reset.generalTown = true;
+    if (type === "ROAD_BRIDGE") reset.roadBridge = true;
+
+    setFunds(reset);
+  };
+
   const toggleFund = (key) => {
-    setFunds(prev => ({
+    setFunds((prev) => ({
       ...prev,
       [key]: !prev[key]
     }));
   };
 
   /* ================= CREATE BUDGET ================= */
+
   const createBudget = async () => {
     if (!budgetName.trim()) {
       alert("Please enter budget name");
       return;
     }
 
-    const selectedFunds = Object.keys(funds).filter(f => funds[f]);
+    if (!budgetType) {
+      alert("Please select General Town or Road & Bridge");
+      return;
+    }
+
+    const selectedFunds = Object.keys(funds).filter((f) => funds[f]);
     if (!selectedFunds.length) {
       alert("Select at least one fund");
+      return;
+    }
+
+    const fiscalYear = generateFiscalYearLabel();
+    if (!fiscalYear) {
+      alert("Please select fiscal year");
       return;
     }
 
@@ -87,7 +147,8 @@ const CreateBudget = () => {
           townshipId,
           name: budgetName.trim(),
           fiscalYear,
-          funds: selectedFunds
+          funds: selectedFunds,
+          budgetType
         })
       });
 
@@ -109,6 +170,8 @@ const CreateBudget = () => {
     }
   };
 
+  /* ================= UI ================= */
+
   return (
     <div style={{ maxWidth: 600, margin: "40px auto" }}>
       <h2>Create Budget</h2>
@@ -116,24 +179,95 @@ const CreateBudget = () => {
       <input
         placeholder="Budget Name (eg: FY 2025 Draft)"
         value={budgetName}
-        onChange={e => setBudgetName(e.target.value)}
-        style={{ width: "100%", padding: 12, marginBottom: 14 }}
+        onChange={(e) => setBudgetName(e.target.value)}
+        style={{ width: "100%", padding: 12, marginBottom: 16 }}
       />
 
-      <p><strong>Fiscal Year:</strong> {fiscalYear}</p>
+      <h4>Fiscal Year</h4>
 
-      <h4>Select Funds</h4>
+      <select
+        value={fyType}
+        onChange={(e) => setFyType(e.target.value)}
+        style={{ width: "100%", padding: 10, marginBottom: 10 }}
+      >
+        <option value="CURRENT">Current Tax Year</option>
+        <option value="TOWNSHIP">Township FY (April 1 – March 31)</option>
+        <option value="CUSTOM">Custom Date Range</option>
+      </select>
 
-      {Object.keys(ALL_FUNDS).map(key => (
-        <label key={key} style={{ display: "block", marginBottom: 8 }}>
+      {fyType === "CUSTOM" && (
+        <>
           <input
-            type="checkbox"
-            checked={!!funds[key]}
-            onChange={() => toggleFund(key)}
-          />{" "}
-          {formatFundName(key)}
-        </label>
-      ))}
+            type="date"
+            value={customStart}
+            onChange={(e) => setCustomStart(e.target.value)}
+            style={{ width: "100%", padding: 10, marginBottom: 8 }}
+          />
+          <input
+            type="date"
+            value={customEnd}
+            onChange={(e) => setCustomEnd(e.target.value)}
+            style={{ width: "100%", padding: 10 }}
+          />
+        </>
+      )}
+
+      <p>
+        <strong>Selected Fiscal Year:</strong> {generateFiscalYearLabel()}
+      </p>
+
+      <h4>Select Budget Type</h4>
+
+      <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+        <button
+          onClick={() => selectBudgetType("GENERAL_TOWN")}
+          style={{
+            flex: 1,
+            padding: 14,
+            background:
+              budgetType === "GENERAL_TOWN" ? "#2563eb" : "#e5e7eb",
+            color:
+              budgetType === "GENERAL_TOWN" ? "#fff" : "#000",
+            border: "none",
+            cursor: "pointer"
+          }}
+        >
+          General Town
+        </button>
+
+        <button
+          onClick={() => selectBudgetType("ROAD_BRIDGE")}
+          style={{
+            flex: 1,
+            padding: 14,
+            background:
+              budgetType === "ROAD_BRIDGE" ? "#2563eb" : "#e5e7eb",
+            color:
+              budgetType === "ROAD_BRIDGE" ? "#fff" : "#000",
+            border: "none",
+            cursor: "pointer"
+          }}
+        >
+          Road & Bridge
+        </button>
+      </div>
+
+      {budgetType && (
+        <>
+          <h4>{FUND_GROUPS[budgetType].label} Funds</h4>
+
+          {FUND_GROUPS[budgetType].funds.map((key) => (
+            <label key={key} style={{ display: "block", marginBottom: 8 }}>
+              <input
+                type="checkbox"
+                checked={funds[key]}
+                onChange={() => toggleFund(key)}
+              />{" "}
+              {formatFundName(key)}
+            </label>
+          ))}
+        </>
+      )}
 
       <div style={{ marginTop: 20 }}>
         <button onClick={createBudget} disabled={loading}>
@@ -151,18 +285,20 @@ const CreateBudget = () => {
   );
 };
 
-/* ================= HELPER ================= */
-const formatFundName = key => ({
-  generalTown: "General Town",
-  generalAssistance: "General Assistance",
-  cemetery: "Cemetery",
-  insurance: "Insurance",
-  socialSecurity: "Social Security",
-  retirement: "Retirement / IMRF",
-  roadBridge: "Road & Bridge",
-  permanentRoad: "Permanent Road",
-  equipmentBuilding: "Equipment & Building",
-  motorFuelTax: "Motor Fuel Tax"
-}[key] || key);
+/* ================= HELPERS ================= */
+
+const formatFundName = (key) =>
+  ({
+    generalTown: "General Town",
+    generalAssistance: "General Assistance",
+    cemetery: "Cemetery",
+    insurance: "Insurance",
+    socialSecurity: "Social Security",
+    retirement: "Retirement / IMRF",
+    roadBridge: "Road & Bridge",
+    permanentRoad: "R&B Special Road Improvement",
+    equipmentBuilding: "Equipment & Building",
+    motorFuelTax: "Tort Judgment & Liability Insurance"
+  }[key] || key);
 
 export default CreateBudget;

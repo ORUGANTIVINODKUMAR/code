@@ -3,11 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 /* ================= PAGES ================= */
 import HomePage from "./pages/HomePage";
 
-/* ================= ONBOARDING ================= */
-import Name from "./pages/onboarding/Name";
-import Usage from "./pages/onboarding/Usage";
-import Work from "./pages/onboarding/work";
-import Funds from "./pages/onboarding/Funds";
 
 /* ================= DASHBOARD ================= */
 import MainDashboard from "./pages/MainDashboard";

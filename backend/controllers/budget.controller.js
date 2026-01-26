@@ -131,21 +131,28 @@ exports.getBudgets = async (req, res) => {
 /* ================= GET SINGLE BUDGET ================= */
 exports.getBudgetById = async (req, res) => {
   try {
-    const budget = await Budget.findById(req.params.id);
+    const budget = await Budget.findById(req.params.id)
+      .populate("townshipId"); // 🔥 THIS IS THE FIX
+
     if (!budget) {
       return res.status(404).json({ message: "Budget not found" });
     }
 
     res.json(budget);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
+
 
 /* ================= DELETE BUDGET ================= */
 exports.deleteBudget = async (req, res) => {
   try {
-    const budget = await Budget.findById(req.params.id);
+    const budget = await Budget
+      .findById(req.params.id)
+      .populate("townshipId");
+
     if (!budget) {
       return res.status(404).json({ message: "Budget not found" });
     }

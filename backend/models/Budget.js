@@ -2,12 +2,39 @@ const mongoose = require("mongoose");
 
 const BudgetSchema = new mongoose.Schema(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    townshipId: { type: mongoose.Schema.Types.ObjectId, ref: "Township" },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
 
-    name: String,
-    fiscalYear: String,
-    funds: [String],
+    townshipId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Township",
+      required: true
+    },
+
+    name: {
+      type: String,
+      required: true
+    },
+
+    fiscalYear: {
+      type: String,
+      required: true
+    },
+
+    // 🔑 NEW FIELD (THIS IS THE KEY)
+    budgetType: {
+      type: String,
+      enum: ["GENERAL_TOWN", "ROAD_BRIDGE"],
+      required: true
+    },
+
+    funds: {
+      type: [String],
+      required: true
+    },
 
     entries: {
       type: Object,
@@ -30,5 +57,4 @@ const BudgetSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// ✅ THIS LINE IS REQUIRED
 module.exports = mongoose.model("Budget", BudgetSchema);
